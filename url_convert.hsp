@@ -1,0 +1,100 @@
+// URLの全角部分だけをURLエンコードするソフト
+
+#packopt name "url_conv"
+#include "hspinet.as"
+
+#define global TRUE  1
+#define global FALSE 0
+
+#module
+	// 文字列を半角 or 全角毎に分割する
+	// 例：「http://hoge.com/ほげ/fuga」は
+	// 「http://hoge.com/」と「ほげ」と「/fuga」に分割される
+	// url_stringが分割後の文字列、url_flgがTRUEなら全角
+	// なお分割数はシステム変数statに格納される
+	#deffunc split_sjis_url str url, array url_string, array url_flg
+		// テンポラリ用の配列を初期化
+		sdim temp_string, 64, 1
+		dim temp_flg, 1
+		// 文字列をコピー
+		sdim url_, 32000
+		url_ = url
+		// 先頭から読み取っていく
+		url_len = strlen(url_)
+		temp_count = 0
+		for k, 0, url_len
+			p = peek(url_, k)
+			// 全角文字の1バイト目ならば
+			if((limit(p, 0x81, 0x9F) == p) || (limit(p, 0xE0, 0xFC) == p)){
+				temp_string(temp_count) = strmid(url_, k, 2)
+				temp_flg(temp_count) = TRUE
+				k++
+				temp_count++
+			}else{
+				// 半角文字列ならば
+				temp_string(temp_count) = strmid(url_, k, 1)
+				temp_flg(temp_count) = FALSE
+				temp_count++
+			}
+		next
+		// 番兵を配置
+		temp_string(temp_count) = ""
+		temp_flg(temp_count) = 2	// 域外の値を番兵として入れる
+		// 出力用の配列を初期化
+		sdim url_string, 1024, 1
+		dim url_flg, 1
+		// 先頭から順に読み取っていく
+		split_count = 0
+		p = 0
+		for k, 0, temp_count
+			// 文字種が変わった地点で区切る
+			if(temp_flg(k) != temp_flg(k + 1)){
+				for i, p, k + 1
+					url_string(split_count) += temp_string(i)
+				next
+				url_flg(split_count) = temp_flg(k)
+				p = k + 1
+				k++
+				split_count++
+			}
+		next
+		// statに書き戻す
+		mref stat_, 64
+		stat_ = split_count
+	return
+#global
+
+	sdim url, 32000
+	url = "http://hoge.com/ほげ/fuga"
+
+	screen 0, 400, 100
+	gsel 0, 2
+		title "URLコンバート"
+	pos 10, 10
+		input url, 400 - 10 * 2, 24, 32000
+	pos 10, 10 + 24 + 10
+		objsize 400 - 10 * 2, 100 - 10 * 3 - 24
+		objmode 2
+		font msgothic, 0.8 * (100 - 10 * 3 - 24)
+		button "変換", *convert
+	stop
+
+*convert
+	// 文字列を半角 or 全角毎に分割する
+	split_sjis_url url, url_string, url_flg
+	// 全角部分はURLエンコードする
+	split_count = stat
+	url = ""
+	for k, 0, split_count
+		if(url_flg(k)){
+			// 全角
+			nkfcnv utf8, url_string(k), "wS"
+			urlencode encoded_utf8, utf8
+			url += encoded_utf8
+		}else{
+			// 半角
+			url += url_string(k)
+		}
+	next
+	objprm 0, url
+	stop
