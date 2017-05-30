@@ -14,6 +14,7 @@ URL Converter ~ Encoded only "Zenkaku"(2Byte-Shift_JIS) String! ~
 　細かい話ですが、「全角部分」の長さが1024バイト以上になると正常に変換されません。  
 　このバグはHSPの仕様も絡んで修正が難しいので放置しています。  
 (どうせそんなURLが入力されることはまずないはずですし)  
+　また、[Punycode](https://ja.wikipedia.org/wiki/Punycode)には対応していません……。
 
 ## 作者
 YSR
