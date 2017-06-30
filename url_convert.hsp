@@ -54,7 +54,6 @@
 				next
 				url_flg(split_count) = temp_flg(k)
 				p = k + 1
-				k++
 				split_count++
 			}
 		next
